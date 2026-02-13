@@ -42,11 +42,11 @@ function getDominantColor(src: string): Promise<string> {
   });
 }
 
-const CLOUD_START = 0;
-const CLOUD_FULL = 1;
-const ZOOM_IN_SCALE = 16;
+const CLOUD_START = 0.40;
+const CLOUD_FULL = 0.92;
+const ZOOM_IN_SCALE = 28;
 /** Exit zoom-in: zoom into centre window until it fills the screen (scale 1 → this), then plane fades to reveal environment */
-const EXIT_ZOOM_SCALE = 14;
+const EXIT_ZOOM_SCALE = 16;
 /** Dimmed window overlay only shows when scroll is at end and user hovers; hidden when scrolling up */
 const SCROLL_END_THRESHOLD = 0.98;
 
@@ -54,10 +54,10 @@ const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
 
 // Motion-design easing: smooth curves so exit feels natural, not linear
-const easeOutCubic = (t: number) => 1 - Math.pow(1 - clamp01(t), 3);
-const easeInOutCubic = (t: number) => {
+const easeOutQuart = (t: number) => 1 - Math.pow(1 - clamp01(t), 4);
+const easeInOutQuart = (t: number) => {
   const x = clamp01(t);
-  return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+  return x < 0.5 ? 8 * x * x * x * x : 1 - Math.pow(-2 * x + 2, 4) / 2;
 };
 
 // Each window is a different project (frosted glass; first line "View [company] — product name", second line description). Last = talks & workshops.
@@ -207,16 +207,13 @@ export const OldTwitterLogoSvg: React.FC<{ className?: string; style?: React.CSS
 // School icon from Google Material Design Icons — used for project window 2 (Talks & Workshops). Exported for CaseStudyTransition.
 export const SchoolIconSvg: React.FC<{ className?: string; style?: React.CSSProperties }> = ({ className, style }) => (
   <svg
-    xmlns="http://www.w3.org/2000/svg"
-    height="24px"
-    viewBox="0 -960 960 960"
-    width="24px"
+    viewBox="0 0 24 24"
     fill="currentColor"
     className={className}
     style={{ width: '100%', height: '100%', ...style }}
     aria-hidden
   >
-    <path d="M480-120 200-272v-240L40-600l440-240 440 240v320h-80v-276l-80 44v240L480-120Zm0-332 274-148-274-148-274 148 274 148Zm0 241 200-108v-151L480-360 280-470v151l200 108Zm0-241Zm0 90Zm0 0Z" />
+    <path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z" />
   </svg>
 );
 
@@ -225,7 +222,7 @@ export const SchoolIconSvg: React.FC<{ className?: string; style?: React.CSSProp
 // ——— Desktop: 5 windows layout (Width 12%, Gap 4%) ———
 const DESKTOP_WINDOW_WIDTH_PCT = 12;
 const DESKTOP_WINDOW_HEIGHT_PCT = 38;
-const DESKTOP_WINDOW_TOP_PCT = 38;
+const DESKTOP_WINDOW_TOP_PCT = 32;
 const DESKTOP_WINDOW_GAP_PCT = 4;
 const DESKTOP_START_PCT = 12;
 
@@ -256,7 +253,7 @@ const MOBILE_WINDOW_FRAMES: Array<[number, number, number, number]> = [
   [MOBILE_WINDOW_LEFT_PCT, MOBILE_WINDOW_TOP(4), MOBILE_WINDOW_WIDTH_PCT, MOBILE_WINDOW_HEIGHT_PCT],
 ];
 
-const PLANE_FADE_IN_END = 0.04;
+const PLANE_FADE_IN_END = 0.01;
 const DESKTOP_MEDIA = '(min-width: 481px) and (min-height: 600px)';
 
 function useIsDesktop(): boolean {
@@ -311,7 +308,7 @@ const Plane: React.FC<{
   const [containerSize, setContainerSize] = useState(() =>
     typeof window !== 'undefined'
       ? { width: window.innerWidth, height: window.innerHeight }
-      : { width: 0, height: 0 }
+      : { width: 1920, height: 1080 } // Fallback to typical desktop dimensions
   );
 
   useLayoutEffect(() => {
@@ -413,13 +410,13 @@ const Plane: React.FC<{
   );
   // Entrance: zoom out (scale 16 → 1). Exit: zoom in (scale 1 → EXIT_ZOOM_SCALE) focused on centre, eased for smooth motion
   const isExiting = exitProgress > 0;
-  const exitZoomT = easeOutCubic(exitProgress);
-  const exitFadeT = easeInOutCubic(exitProgress);
+  const exitZoomT = easeOutQuart(exitProgress);
+  const exitFadeT = easeInOutQuart(exitProgress);
   const scale = isExiting
     ? lerp(1, EXIT_ZOOM_SCALE, exitZoomT)
     : lerp(ZOOM_IN_SCALE, 1, cloudT);
   const glassAlpha = useMemo(
-    () => (isExiting ? 1 : lerp(0.95, 1, cloudT)),
+    () => (isExiting ? 0.95 : lerp(0.85, 0.95, cloudT)),
     [cloudT, isExiting]
   );
   // During exit: zoom eases out (decelerates at end); fade eases in-out (smooth start and end)
@@ -457,10 +454,10 @@ const Plane: React.FC<{
           }
         }
       `}</style>
-      <svg width={0} height={0} aria-hidden="true">
+      <svg width="100%" height="100%" style={{ position: 'fixed', inset: 0, pointerEvents: 'none' }} aria-hidden="true">
         <defs>
-          <mask id="stadium-cutout-mask-desktop" maskUnits="userSpaceOnUse">
-            <rect x={0} y={0} width="100%" height="100%" fill="white" />
+          <mask id="stadium-cutout-mask-desktop" maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse">
+            <rect x={0} y={0} width={containerSize.width} height={containerSize.height} fill="white" />
             {(isDesktop ? computedFrames : []).map((frame, i) => (
               <rect
                 key={i}
@@ -474,8 +471,8 @@ const Plane: React.FC<{
               />
             ))}
           </mask>
-          <mask id="stadium-cutout-mask-mobile" maskUnits="userSpaceOnUse">
-            <rect x={0} y={0} width="100%" height="100%" fill="white" />
+          <mask id="stadium-cutout-mask-mobile" maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse">
+            <rect x={0} y={0} width={containerSize.width} height={containerSize.height} fill="white" />
             {(!isDesktop ? computedFrames : []).map((frame, i) => (
               <rect
                 key={i}
@@ -508,25 +505,21 @@ const Plane: React.FC<{
           maxWidth: isDesktop ? undefined : '100%',
           maxHeight: isDesktop ? undefined : '100%',
           overflow: isDesktop ? 'visible' : 'hidden',
-          perspective: '1400px',
           transformOrigin: '50% 50%',
-          transform: `scale(${scale})`,
+          transform: `scale(${scale}) translate3d(0,0,0)`,
           opacity: planeOpacity,
-          visibility: bioHidden ? 'hidden' : 'visible',
-          transition: 'visibility 0.3s',
-          willChange: 'transform, opacity',
         }}
       >
         <header
           className="absolute left-0 right-0 text-center select-none"
-          style={{ top: isDesktop ? '15%' : 'clamp(1rem, 8vh, 2.5rem)', zIndex: 11 }}
+          style={{ top: isDesktop ? '12%' : 'clamp(1rem, 8vh, 2.5rem)', zIndex: 11, transform: 'translate3d(0,0,0)' }}
         >
           <h2
             className="font-noto-condensed tracking-[-0.05em] select-none"
             style={{
               margin: 0,
               color: '#ffffff',
-              fontSize: isDesktop ? 'clamp(2.5rem, 6vw, 4rem)' : 'clamp(1.8rem, 8vw, 2.5rem)',
+              fontSize: isDesktop ? 'clamp(2rem, 5vw, 3rem)' : 'clamp(1.4rem, 6vw, 2rem)',
               lineHeight: 1.1,
               WebkitFontSmoothing: 'subpixel-antialiased',
               MozOsxFontSmoothing: 'auto',
@@ -537,14 +530,13 @@ const Plane: React.FC<{
             Projects on board
           </h2>
           <p
-            className="font-sans font-normal select-none"
+            className="font-sans font-light select-none"
             style={{
               margin: 0,
               marginTop: '0.85rem',
               color: '#ffffff',
-              opacity: 0.9,
-              fontSize: isDesktop ? 'clamp(0.85rem, 2vw, 1.1rem)' : 'clamp(0.75rem, 3vmin, 1rem)',
-              lineHeight: 1.4,
+              fontSize: isDesktop ? 'clamp(1rem, 2.2vw, 1.2rem)' : 'clamp(0.9rem, 3vmin, 1.1rem)',
+              lineHeight: 1.8,
               WebkitFontSmoothing: 'subpixel-antialiased',
               MozOsxFontSmoothing: 'auto',
               textRendering: 'geometricPrecision',
@@ -568,29 +560,25 @@ const Plane: React.FC<{
                 height: '100%',
                 maskImage: `url(#${maskId})`,
                 WebkitMaskImage: `url(#${maskId})`,
-                transform: 'translateZ(0)',
-                border: `1px solid rgba(255, 255, 255, ${0.4 + glassAlpha * 0.2})`,
+                maskRepeat: 'no-repeat',
+                maskSize: '100% 100%',
+                maskPosition: '0 0',
+                transform: 'translate3d(0,0,0)',
+                border: '1px solid rgba(255, 255, 255, 0.55)',
                 boxShadow: `
                   inset 0 1px 0 0 rgba(255, 255, 255, 0.6),
                   inset 0 -1px 0 0 rgba(0, 0, 0, 0.05)
                 `,
-                backdropFilter: cloudT > 0.45 ? 'blur(12px)' : 'none',
-                WebkitBackdropFilter: cloudT > 0.45 ? 'blur(12px)' : 'none',
-                willChange: 'opacity',
-                background: `
-                  linear-gradient(165deg,
-                    rgba(242, 244, 252, ${glassAlpha}) 0%,
-                    rgba(235, 238, 248, ${glassAlpha}) 30%,
-                    rgba(230, 233, 243, ${glassAlpha}) 60%,
-                    rgba(232, 235, 245, ${glassAlpha}) 100%)
-                `,
+                backdropFilter: 'blur(28px)',
+                WebkitBackdropFilter: 'blur(28px)',
+                background: `rgba(255, 255, 255, ${glassAlpha * 0.45})`,
               }}
             />
 
             {/* Icons layer */}
             <div
               className="absolute"
-              style={{ left: 0, top: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 2, transform: 'translateZ(0)' }}
+              style={{ left: 0, top: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 2, transform: 'translate3d(0,0,0)' }}
             >
               {computedFrames.map((frame, i) => (
                 <div
@@ -602,7 +590,7 @@ const Plane: React.FC<{
                     width: frame.width,
                     height: frame.height,
                     borderRadius: frame.borderRadius,
-                    opacity: isExiting ? 0 : (dimmedWindow === i ? 1 : 0.6),
+                    opacity: isExiting ? 0 : (cloudT > 0.9 ? (dimmedWindow === i ? 1 : 0.85) : 0),
                     background: 'transparent',
                     transition: 'opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
                   }}
@@ -630,7 +618,7 @@ const Plane: React.FC<{
             {/* Project name below hovered window */}
             <div
               className="absolute"
-              style={{ left: 0, top: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 3, transform: 'translateZ(0)' }}
+              style={{ left: 0, top: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 3, transform: 'translate3d(0,0,0)' }}
             >
               {computedFrames.map((frame, i) => {
                 const effectiveH = containerSize.height || (typeof window !== 'undefined' ? window.innerHeight : 1);
@@ -641,14 +629,14 @@ const Plane: React.FC<{
                     className="absolute flex flex-col items-center justify-center text-center"
                     style={{
                       left: frame.left,
-                      top: frame.top + frame.height + (effectiveH * 0.05),
+                      top: frame.top + frame.height + (effectiveH * 0.03),
                       width: frame.width,
                       opacity: isActive ? 1 : 0,
                       transform: `translateY(${isActive ? 0 : 20}px)`,
                       transition: 'opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
                     }}
                   >
-                    <span className="font-sans text-white font-medium text-[11px] sm:text-[13px] tracking-wide uppercase select-none [text-shadow:0_1px_3px_rgba(0,0,0,0.5)]">
+                    <span className="font-sans text-white font-medium text-[13px] sm:text-[15px] tracking-wide uppercase select-none [text-shadow:0_1px_3px_rgba(0,0,0,0.5)]">
                       {WINDOW_LABELS[i]}
                     </span>
                     {PROJECTS[i].description && (
@@ -658,12 +646,12 @@ const Plane: React.FC<{
                             href="https://www.linkedin.com/in/maielamin"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="font-sans text-white font-light no-underline [text-shadow:0_1px_2px_rgba(0,0,0,0.15)] hover:text-white/90 pointer-events-auto text-[10px] sm:text-[12px]"
+                            className="font-sans text-white font-light no-underline [text-shadow:0_1px_2px_rgba(0,0,0,0.15)] hover:text-white/90 pointer-events-auto text-[12px] sm:text-[14px]"
                           >
                             {PROJECTS[i].description}
                           </a>
                         ) : (
-                          <span className="font-sans text-white font-light select-none [text-shadow:0_1px_2px_rgba(0,0,0,0.15)] text-[10px] sm:text-[12px]">
+                          <span className="font-sans text-white font-light select-none [text-shadow:0_1px_2px_rgba(0,0,0,0.15)] text-[12px] sm:text-[14px]">
                             {PROJECTS[i].description}
                           </span>
                         )}
@@ -677,7 +665,7 @@ const Plane: React.FC<{
             {/* Bezels */}
             <div
               className="absolute"
-              style={{ left: 0, top: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 4, transform: 'translateZ(0)' }}
+              style={{ left: 0, top: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 4, transform: 'translate3d(0,0,0)' }}
             >
               {computedFrames.map((frame, i) => (
                 <div
@@ -689,6 +677,7 @@ const Plane: React.FC<{
                     width: frame.width,
                     height: frame.height,
                     borderRadius: frame.borderRadius,
+                    transform: 'translate3d(0,0,0)',
                     boxShadow: `
                       inset 0 1px 0 0 rgba(255,255,255,0.6),
                       inset 0 -1px 0 0 rgba(0,0,0,0.05),
@@ -705,7 +694,7 @@ const Plane: React.FC<{
 
             <div
               className="absolute"
-              style={{ left: 0, top: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 5, transform: 'translateZ(0)' }}
+              style={{ left: 0, top: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 5, transform: 'translate3d(0,0,0)' }}
             >
               {computedFrames.map((frame, i) => {
                 const commonProps = {

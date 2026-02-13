@@ -15,14 +15,14 @@ const PlaneMemo = memo(Plane);
 const PARALLAX_SCROLL_HEIGHT_VH = 700;
 // Extra viewport heights after parallax ends where the plane stays fully in view (no translation)
 const PARALLAX_DWELL_VH = 220;
-// Lerp factor for smooth scroll — higher = more responsive, still smooth
-const SCROLL_SMOOTH_LERP = 0.2;
-// Ease-out cubic: one motion curve for UI parallax + plane layer (decelerate into plane)
-const easeOutCubic = (t: number) => 1 - Math.pow(1 - Math.max(0, Math.min(1, t)), 3);
-// Ease-in-out cubic: smooth start and end for exit layer translate (motion-design feel)
-const easeInOutCubic = (t: number) => {
+// Smooth scroll via RAF — update every frame when value changes for seamless parallax
+const SCROLL_SMOOTH_LERP = 1; // No smoothing for stable rendering
+// Ease-out quart: smoother deceleration curve for UI parallax + plane layer
+const easeOutQuart = (t: number) => 1 - Math.pow(1 - Math.max(0, Math.min(1, t)), 4);
+// Ease-in-out quart: smooth start and end for exit layer translate (motion-design feel)
+const easeInOutQuart = (t: number) => {
   const x = Math.max(0, Math.min(1, t));
-  return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+  return x < 0.5 ? 8 * x * x * x * x : 1 - Math.pow(-2 * x + 2, 4) / 2;
 };
 // Small epsilon so we update every frame when scrolling (seamless feel); no time throttle
 const SCROLL_UPDATE_EPSILON = 0.002;
@@ -108,7 +108,7 @@ const App: React.FC = () => {
   }, []);
 
   // Single eased progress for "parallax into plane" so UI and plane layer stay in perfect sync
-  const parallaxProgress = easeOutCubic(scrollProgress);
+  const parallaxProgress = easeOutQuart(scrollProgress);
 
   // Parallax ends at maxScrollPx; then dwell (plane in view); exit starts when we reach the content block (end of tall div)
   const innerHeight = typeof window !== 'undefined' ? window.innerHeight : 1080;
@@ -126,7 +126,7 @@ const App: React.FC = () => {
   // Exit phase: keep layer at "end" state (progress 1); only Plane uses exitProgress for zoom-in, no reverse of enter
   const exitProgress = layerTranslateY > 0 ? Math.min(1, layerTranslateY / innerHeight) : 0;
   const effectiveParallaxProgress = layerTranslateY > 0 ? 1 : parallaxProgress;
-  const easedLayerTranslateY = exitProgress > 0 ? easeInOutCubic(exitProgress) * innerHeight : 0;
+  const easedLayerTranslateY = exitProgress > 0 ? easeInOutQuart(exitProgress) * innerHeight : 0;
 
   if (isMobile) {
     return (
@@ -184,12 +184,13 @@ const App: React.FC = () => {
           <Experience scrollProgress={scrollProgress} turbulenceRef={turbulenceRef} onSkyColorChange={handleSkyColorChange} />
         </motion.div>
       </div>
+      {/* Mail CTA - Fixed position, always visible throughout scroll */}
       <div
         className="fixed inset-0 w-full h-full overflow-visible pointer-events-none"
         style={{
           zIndex: 50,
           willChange: 'transform',
-          transform: easedLayerTranslateY > 0 ? `translateY(-${easedLayerTranslateY}px)` : 'none',
+          transform: easedLayerTranslateY > 0 ? `translate3d(0, -${easedLayerTranslateY}px, 0)` : 'translate3d(0, 0, 0)',
           pointerEvents: isPastPlane ? 'none' : 'auto',
         }}
         aria-hidden
