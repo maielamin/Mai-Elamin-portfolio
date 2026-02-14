@@ -528,8 +528,8 @@ const SkyGradient: React.FC<{ atmosphere: THREE.Color; space: THREE.Color; horiz
       <sphereGeometry args={[900, 32, 32]} />
       {/* Render on the inside of the sphere */}
       <shaderMaterial side={THREE.BackSide} uniforms={uniforms}
-        vertexShader={`varying vec3 vWorldPosition; void main() { vWorldPosition = (modelMatrix * vec4(position, 1.0)).xyz; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`}
-        fragmentShader={`uniform vec3 topColor; uniform vec3 midColor; uniform vec3 bottomColor; uniform float offset; uniform float exponent; varying vec3 vWorldPosition; void main() { float h = normalize(vWorldPosition + offset).y; vec3 finalColor = h > 0.0 ? mix(midColor, topColor, pow(h, exponent)) : mix(midColor, bottomColor, pow(-h, exponent)); gl_FragColor = vec4(finalColor, 1.0); }`}
+        vertexShader={`varying vec3 vLocalPosition; void main() { vLocalPosition = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`}
+        fragmentShader={`uniform vec3 topColor; uniform vec3 midColor; uniform vec3 bottomColor; uniform float offset; uniform float exponent; varying vec3 vLocalPosition; void main() { vec3 pos = normalize(vLocalPosition); float h = pos.y; vec3 finalColor = h > 0.0 ? mix(midColor, topColor, pow(h, exponent)) : mix(midColor, bottomColor, pow(-h, exponent)); gl_FragColor = vec4(finalColor, 1.0); }`}
       />
     </mesh>
   );

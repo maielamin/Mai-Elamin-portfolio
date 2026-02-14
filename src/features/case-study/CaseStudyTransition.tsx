@@ -2,13 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import CaseStudyView from './CaseStudyView';
-import { DeliverooLogoSvg, OldTwitterLogoSvg, SchoolIconSvg } from './Plane';
 
 const EXPAND_DURATION = 0.32; // mask opens to full white — slightly longer for a cleaner reveal
-const LOGO_OVER_EXPAND_DURATION = 0.12;
-const WHITE_HOLD = 0.12; // brief full-white hold before content fades in
+const WHITE_HOLD = 0.3; // brief full-white hold before content fades in
 const EASE_EXPAND = [0.22, 0.72, 0, 1] as const; // smooth decelerate into full screen
-const LOGO_OVER_EXPAND_SCALE = 3.2; // logo expands so the circle becomes full white
+const CASE_STUDY_Z = 1200; // Above fixed plane/UI layers and header CTA
 
 /** Scale needed so the rect, when scaled from its center, fully covers the viewport. */
 function getScaleToCover(rect: DOMRect): number {
@@ -56,9 +54,6 @@ const CaseStudyTransition: React.FC<{
 
   const scaleToCover = getScaleToCover(rect);
 
-  const LogoComponent =
-    projectIndex === 0 ? DeliverooLogoSvg : projectIndex === 1 ? OldTwitterLogoSvg : SchoolIconSvg;
-
   return (
     <>
       <AnimatePresence>
@@ -67,7 +62,7 @@ const CaseStudyTransition: React.FC<{
             key="mask-expand"
             className="fixed pointer-events-none flex items-center justify-center"
             style={{
-              zIndex: 40,
+              zIndex: CASE_STUDY_Z,
               left: rect.left,
               top: rect.top,
               width: rect.width,
@@ -90,36 +85,6 @@ const CaseStudyTransition: React.FC<{
               animate={{ backgroundColor: 'rgba(255, 255, 255, 1)' }}
               transition={{ duration: EXPAND_DURATION * 0.7, ease: [0.32, 0.72, 0, 1] as const }}
             />
-            {/* Logo stays white (like on the plane), over-expands then fades */}
-            <motion.span
-              className="absolute"
-              style={{
-                width: '28%',
-                height: '28%',
-                maxWidth: '28%',
-                maxHeight: '28%',
-                filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.25))',
-              }}
-              initial={{ scale: 1, opacity: 1 }}
-              animate={{
-                scale: LOGO_OVER_EXPAND_SCALE,
-                opacity: 0,
-              }}
-              transition={{
-                scale: { duration: LOGO_OVER_EXPAND_DURATION, ease: [0.2, 0.8, 0, 1] as const },
-                opacity: { duration: 0.12, delay: LOGO_OVER_EXPAND_DURATION * 0.5 },
-              }}
-            >
-              <LogoComponent
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'contain',
-                  fill: '#fff',
-                  color: '#fff',
-                }}
-              />
-            </motion.span>
           </motion.div>
         )}
       </AnimatePresence>
@@ -128,7 +93,7 @@ const CaseStudyTransition: React.FC<{
       {phase === 'case-study' && (
         <div
           className="fixed inset-0 bg-white"
-          style={{ zIndex: 40 }}
+          style={{ zIndex: CASE_STUDY_Z }}
           aria-hidden
         />
       )}
@@ -142,7 +107,7 @@ const CaseStudyTransition: React.FC<{
             exit={{ opacity: 0 }}
             transition={{ duration: 0.35, ease: EASE_EXPAND }}
             className="fixed inset-0 overflow-y-auto overflow-x-hidden"
-            style={{ zIndex: 41 }}
+            style={{ zIndex: CASE_STUDY_Z + 1 }}
           >
             <CaseStudyView projectIndex={projectIndex} onClose={onClose} onSelectProject={onSelectProject} />
           </motion.div>

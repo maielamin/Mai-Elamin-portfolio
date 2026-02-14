@@ -4,16 +4,15 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-y: scroll;
 }
 
-html,
 body {
   margin: 0;
   padding: 0;
   width: 100%;
   min-height: 100%;
   overflow-x: hidden;
-  overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   background: #000;
   font-family: 'Inter', sans-serif;
