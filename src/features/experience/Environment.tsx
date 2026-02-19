@@ -603,17 +603,22 @@ const Environment: React.FC<{
   }, [themeData, onSkyColorChange]);
 
   // Star visibility logic: stars fade out as the user scrolls — full at top, gone at end
-  const STAR_OPACITY_MIN = 0.58;
+  // Compute background "lightness" from the current sky color (atmosphere)
+  const getColorLightness = (color: THREE.Color) => {
+    // Perceived luminance formula (sRGB)
+    return 0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b;
+  };
+
   const starOpacity = useMemo(() => {
-    let opacity: number;
-    if (timeOfDay >= 6.0 && timeOfDay < 9.0) opacity = Math.pow(1.0 - (timeOfDay - 6.0) / 3.0, 2);
-    else if (timeOfDay >= 9.0 && timeOfDay < 16.0) opacity = 0;
-    else if (timeOfDay >= 16.0 && timeOfDay < 19.0) opacity = Math.pow((timeOfDay - 16.0) / 3.0, 2);
-    else opacity = 1;
-    const timeOpacity = Math.max(opacity, STAR_OPACITY_MIN);
-    // Fade stars linearly as the user scrolls: 1 at scroll 0, 0 at scroll 1
-    return timeOpacity * (1 - scrollProgress);
-  }, [timeOfDay, scrollProgress]);
+    // As the background gets lighter, stars fade out; as it darkens, stars fade in
+    const lightness = getColorLightness(themeData.atmosphere);
+    // Fade out stars when lightness > 0.45 (light blue), fade in as it gets darker
+    // 0.45 = light blue, 0.15 = deep night
+    let fade = 1 - (lightness - 0.15) / (0.45 - 0.15);
+    fade = Math.max(0, Math.min(1, fade));
+    // Also fade with scroll progress
+    return fade * (1 - scrollProgress);
+  }, [themeData.atmosphere, scrollProgress]);
 
   // Aggregate all sky layers into a single JSX group
   return (

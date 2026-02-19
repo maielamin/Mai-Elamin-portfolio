@@ -1,17 +1,22 @@
 // Plane: simple scroll-driven overlay — CSS transition for smooth scale, no flash
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 
-const CLOUD_START = 0.40;
+// Clamp a number between 0 and 1
+function clamp01(t: number) {
+  return Math.max(0, Math.min(1, t));
+}
+
+// Animation/transition helpers and constants
+const CLOUD_START = 0.08;
 const CLOUD_FULL = 0.92;
-const ZOOM_IN_SCALE = 28;
-/** Exit zoom-in: zoom into centre window until it fills the screen (scale 1 → this), then plane fades to reveal environment */
-const EXIT_ZOOM_SCALE = 16;
-
-const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
-
-// Motion-design easing: smooth curves so exit feels natural, not linear
-const easeOutQuart = (t: number) => 1 - Math.pow(1 - clamp01(t), 4);
+const EXIT_ZOOM_SCALE = 1.18;
+const ZOOM_IN_SCALE = 16;
+function lerp(a: number, b: number, t: number) {
+  return a + (b - a) * t;
+}
+function easeOutQuart(t: number) {
+  return 1 - Math.pow(1 - clamp01(t), 4);
+}
 const easeInOutQuart = (t: number) => {
   const x = clamp01(t);
   return x < 0.5 ? 8 * x * x * x * x : 1 - Math.pow(-2 * x + 2, 4) / 2;
@@ -20,7 +25,7 @@ const easeInOutQuart = (t: number) => {
 // Each window is a different project (frosted glass; first line "View [company] — product name", second line description). Last = talks & AI workshops.
 const PROJECTS: { company: string; productName: string; description: string }[] = [
   { company: '', productName: '', description: '' },
-  { company: 'Deliveroo', productName: 'DoorDash', description: 'Coming soon - Bulk management on Partner hub for grocery and retail partners' },
+  { company: 'Deliveroo', productName: 'Partner hub', description: 'Coming soon - Bulk management for grocery and retail partners' },
   { company: 'Google', productName: 'Play Store', description: 'Coming soon - Deep links management redesign to comply with EU laws' },
   { company: 'Twitter', productName: 'Ads', description: 'Coming soon - Quick Promote rebrand for professionals to comply with Apple IAP' },
   { company: "Mai is travelling", productName: '', description: 'Find out her latest talks & AI workshops from her recent posts' },
@@ -167,13 +172,12 @@ const Plane: React.FC<{
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const windowMaxHeight = viewportSize.height > 0 && viewportSize.height <= 820
-    ? 'min(180px, 24vh)'
-    : '320px';
+  const windowMaxHeight = '320px';
   const windowYOffsetPct = useMemo(() => {
     if (viewportSize.width <= 0) return 0;
     const t = clamp01((900 - viewportSize.width) / 420);
-    const responsiveOffset = t * 10;
+    // Increase multiplier for more offset in tablet view
+    const responsiveOffset = t * 18;
     return responsiveOffset + (isDesktop ? 0.5 : 0);
   }, [viewportSize.width, isDesktop]);
 
@@ -357,7 +361,7 @@ const Plane: React.FC<{
         />
         <header
           className="absolute left-0 right-0 text-center select-none"
-          style={{ top: isDesktop ? '12%' : 'clamp(0.85rem, 6vh, 2rem)', zIndex: 11, transform: 'translate3d(0,0,0)' }}
+          style={{ top: isDesktop ? '12%' : 'clamp(2.5rem, 12vh, 4.5rem)', zIndex: 11, transform: 'translate3d(0,0,0)' }}
         >
           <h2
             className="font-noto-condensed tracking-[-0.05em] select-none"
@@ -380,7 +384,9 @@ const Plane: React.FC<{
               margin: 0,
               marginTop: '0.85rem',
               color: 'rgba(255, 255, 255, 1)',
-              fontSize: isDesktop ? 'clamp(0.9rem, 1.9vw, 1.1rem)' : 'clamp(0.8rem, 2.6vmin, 1rem)',
+              fontSize: isDesktop
+                ? 'clamp(0.9rem, 1.9vw, 1.1rem)'
+                : 'clamp(0.5rem, 1vw, 0.7rem)', // minimum for tablet/mobile
               lineHeight: 1.8,
               WebkitFontSmoothing: 'subpixel-antialiased',
               MozOsxFontSmoothing: 'auto',
@@ -469,36 +475,46 @@ const Plane: React.FC<{
                       transition: 'opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
                     }}
                   >
-                    <span className="font-sans text-white font-medium text-[14px] sm:text-[16px] tracking-wide select-none [text-shadow:0_1px_3px_rgba(0,0,0,0.5)]" style={{ color: '#ffffff' }}>
+                    <span className="font-sans text-white font-medium text-[16px] xl:text-[17px] md:max-lg:text-[10px] tracking-wide select-none [text-shadow:0_1px_3px_rgba(0,0,0,0.5)]" style={{ color: '#ffffff' }}>
                       {WINDOW_LABELS[i]}
                     </span>
                     {PROJECTS[i].description && (
                       <div className="mt-1">
-                        {i === 4 ? (
-                          <a
-                            href="https://www.linkedin.com/in/maielamin"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="font-sans text-white font-light no-underline [text-shadow:0_1px_3px_rgba(0,0,0,0.5)] hover:text-white/90 pointer-events-auto text-[14px] sm:text-[16px]"
-                            style={{ color: '#ffffff', lineHeight: 1.6 }}
-                          >
-                            {PROJECTS[i].description}
-                          </a>
-                        ) : i === 5 ? (
-                          <a
-                            href="https://github.com/maielamin"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="font-sans text-white font-light no-underline [text-shadow:0_1px_3px_rgba(0,0,0,0.5)] hover:text-white/90 pointer-events-auto text-[14px] sm:text-[16px]"
-                            style={{ color: '#ffffff', lineHeight: 1.6 }}
-                          >
-                            {PROJECTS[i].description}
-                          </a>
-                        ) : (
-                          <span className="font-sans text-white font-light select-none [text-shadow:0_1px_3px_rgba(0,0,0,0.5)] text-[14px] sm:text-[16px]" style={{ color: '#ffffff', lineHeight: 1.6 }}>
-                            {PROJECTS[i].description}
-                          </span>
-                        )}
+                        {(() => {
+                          const commonClass = "font-sans text-white font-light select-none [text-shadow:0_1px_3px_rgba(0,0,0,0.5)] text-[14px] xl:text-[15px] md:max-lg:text-[7px] mt-1 block";
+                          const commonStyle = { color: '#ffffff', lineHeight: 1.45, maxHeight: '4.35em', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' as any, marginTop: '0.35em' };
+                          if (i === 4) {
+                            return (
+                              <a
+                                href="https://www.linkedin.com/in/maielamin"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={commonClass + ' no-underline'}
+                                style={commonStyle}
+                              >
+                                {PROJECTS[i].description}
+                              </a>
+                            );
+                          } else if (i === 5) {
+                            return (
+                              <a
+                                href="https://github.com/maielamin"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={commonClass}
+                                style={commonStyle}
+                              >
+                                {PROJECTS[i].description}
+                              </a>
+                            );
+                          } else {
+                            return (
+                              <span className={commonClass} style={commonStyle}>
+                                {PROJECTS[i].description}
+                              </span>
+                            );
+                          }
+                        })()}
                       </div>
                     )}
                   </div>
@@ -588,23 +604,43 @@ const Plane: React.FC<{
               })}
             </div>
 
-            <footer
-              className="absolute left-0 right-0 text-center select-none"
-              style={{ bottom: isDesktop ? '3%' : '5%', zIndex: 11, pointerEvents: 'auto' }}
-              onMouseEnter={() => onTurbulenceChange?.(true)}
-              onMouseLeave={() => onTurbulenceChange?.(false)}
-            >
-              <span
-                className="font-sans text-white font-normal cursor-pointer transition-opacity hover:text-white/90"
+            {/* Footer only visible and interactive when plane is visible (not bioHidden, not faded out) */}
+            {scrollProgress >= 0.98 && (
+              <footer
+                className="w-full text-center select-none"
                 style={{
-                  color: '#ffffff',
-                  fontSize: 'clamp(0.5rem, 1.1vw, 0.7rem)',
-                  textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+                  pointerEvents: 'auto',
+                  position: 'absolute',
+                  left: 0,
+                  right: 0,
+                  bottom: '2%',
+                  zIndex: 99,
+                  opacity: planeOpacity,
+                  background: 'transparent',
+                  padding: '12px 0',
+                  transition: 'opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+                }}
+                onMouseEnter={() => {
+                  console.log('Turbulence ON (footer hover)');
+                  onTurbulenceChange?.(true);
+                }}
+                onMouseLeave={() => {
+                  console.log('Turbulence OFF (footer unhover)');
+                  onTurbulenceChange?.(false);
                 }}
               >
-                10,000 ft above ground. Hover here to trigger turbulence.
-              </span>
-            </footer>
+                <span
+                  className="font-sans text-white font-normal cursor-pointer transition-opacity hover:text-white/90"
+                  style={{
+                    color: '#ffffff',
+                    fontSize: 'clamp(0.65rem, 1.2vw, 0.85rem)',
+                    textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+                  }}
+                >
+                  10,000 ft above ground. Hover here to trigger turbulence.
+                </span>
+              </footer>
+            )}
           </>
         ) : null}
       </div>

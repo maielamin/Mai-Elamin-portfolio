@@ -3,23 +3,39 @@ import React from 'react';
 const CONTACT_EMAIL = 'maielamin@hotmail.com';
 const MAILTO_HREF = `mailto:${CONTACT_EMAIL}`;
 
-/**
- * Full-screen overlay on mobile: asks user to view on desktop for best experience.
- * Uses same typefaces as main UI (Noto Serif Display for heading, Inter/sans for description).
- * Critical styles inlined so the message is never blank even if Tailwind or fonts fail.
- */
 const MobileDisclaimer: React.FC = () => (
   <div
     className="fixed inset-0 flex flex-col items-center justify-center text-center"
     style={{
       touchAction: 'none',
       zIndex: 99999,
-      background: 'linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.45) 60%, rgba(0,0,0,0.65) 100%)',
-      backdropFilter: 'blur(4px)',
-      WebkitBackdropFilter: 'blur(4px)',
+      background: 'linear-gradient(180deg, rgba(15,15,15,0.55) 0%, rgba(30,30,30,0.38) 60%, rgba(0,0,0,0.62) 100%)',
+      backgroundColor: 'rgba(20,20,20,0.45)',
+      backdropFilter: 'blur(6px) saturate(1.2)',
+      WebkitBackdropFilter: 'blur(6px) saturate(1.2)',
       minHeight: '100dvh',
+      width: '100vw',
+      maxWidth: '100vw',
+      pointerEvents: 'none',
     }}
   >
+    <div className="max-w-md" style={{ color: '#fff', padding: '0 32px', pointerEvents: 'auto' }}>
+      <h1
+        className="font-noto-condensed text-3xl sm:text-5xl md:text-6xl tracking-tight leading-tight select-none m-0"
+        style={{ fontFamily: "'Noto Serif Display', serif", letterSpacing: '-0.05em', fontSize: 'clamp(2.2rem, 7vw, 3.5rem)', marginBottom: 0 }}
+      >
+        Best viewed on desktop
+      </h1>
+      <p
+        className="text-[#9ca3af] text-base leading-loose mb-8 max-w-lg m-0"
+        style={{
+          fontSize: 'clamp(0.9rem, 2.3vw, 1.15rem)',
+          marginTop: '0.75rem',
+        }}
+      >
+        For the best viewing experience, explore this portfolio on a desktop or a tablet in landscape.
+      </p>
+    </div>
     {/* Email CTA Button */}
     <a
       href={MAILTO_HREF}
@@ -57,23 +73,7 @@ const MobileDisclaimer: React.FC = () => (
       </svg>
     </a>
 
-    <div className="max-w-md space-y-5" style={{ color: '#fff', padding: '0 32px' }}>
-      <h1
-        className="font-noto-condensed text-2xl sm:text-4xl md:text-5xl tracking-tight leading-tight select-none"
-        style={{ fontFamily: "'Noto Serif Display', serif", letterSpacing: '-0.05em' }}
-      >
-        Best viewed on desktop
-      </h1>
-      <p
-        className="font-sans font-light leading-relaxed select-none drop-shadow-md"
-        style={{
-          color: 'rgba(255,255,255,0.9)',
-          fontSize: 'clamp(0.8rem, 2.1vw, 1.05rem)',
-        }}
-      >
-        This portfolio is designed for a desktop experience. Please open it on a computer or tablet in landscape for the full experience.
-      </p>
-    </div>
+    {/* Only the updated disclaimer content remains above. Duplicate removed. */}
   </div>
 );
 

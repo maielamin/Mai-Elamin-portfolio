@@ -9,7 +9,7 @@ import CaseStudyTransition from './features/case-study/CaseStudyTransition';
 const UIOverlayMemo = memo(UIOverlay);
 const PlaneMemo = memo(Plane);
 
-const PARALLAX_SCROLL_HEIGHT_VH = 700;
+const PARALLAX_SCROLL_HEIGHT_VH = 500;
 const PARALLAX_DWELL_VH = 220;
 const PARALLAX_EXIT_VH = 120;
 const EXIT_PROGRESS_THRESHOLD = 0.06;
@@ -20,9 +20,8 @@ const easeInOutQuart = (t: number) => {
   return x < 0.5 ? 8 * x * x * x * x : 1 - Math.pow(-2 * x + 2, 4) / 2;
 };
 
-const MOBILE_BREAKPOINT_PX = 768;
-const MOBILE_HEIGHT_PX = 700;
-const MOBILE_MEDIA_QUERY = `(max-width: ${MOBILE_BREAKPOINT_PX}px), (max-height: ${MOBILE_HEIGHT_PX}px)`;
+const MOBILE_BREAKPOINT_PX = 1024;
+const MOBILE_MEDIA_QUERY = `(max-width: ${MOBILE_BREAKPOINT_PX}px)`;
 
 // Define the main App component using React's Functional Component type
 const App: React.FC = () => {
@@ -44,6 +43,8 @@ const App: React.FC = () => {
   const prevScrollYRef = useRef(0);
   const portalRef = useRef<HTMLDivElement | null>(null);
   const [portalMounted, setPortalMounted] = useState(false);
+  const footerPortalRef = useRef<HTMLDivElement | null>(null);
+  const [footerPortalMounted, setFooterPortalMounted] = useState(false);
 
   const handleWindowSelect = (index: number, rect: DOMRect) => {
     setExpandRect(rect);
@@ -160,6 +161,24 @@ const App: React.FC = () => {
     };
   }, [isMobile]);
 
+  // Create footer portal for copyright (desktop only)
+  useEffect(() => {
+    if (isMobile) return;
+    
+    const footerEl = document.createElement('div');
+    footerEl.id = 'footer-portal';
+    footerEl.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:999999;';
+    document.body.appendChild(footerEl);
+    footerPortalRef.current = footerEl;
+    setFooterPortalMounted(true);
+    
+    return () => {
+      footerEl.remove();
+      footerPortalRef.current = null;
+      setFooterPortalMounted(false);
+    };
+  }, [isMobile]);
+
   // Simplified exit arming: arm when scrolling into exit zone with buffer
   useEffect(() => {
     if (isMobile) return;
@@ -180,8 +199,19 @@ const App: React.FC = () => {
 
   return (
     <>
+      {/* Mail CTA - top right corner (always visible on desktop, above all overlays) */}
       {!isMobile && (
-        <div className="fixed inset-0 w-full h-full pointer-events-none" style={{ zIndex: 999 }} aria-hidden>
+        <div
+          className="fixed top-0 right-0 p-6"
+          style={{
+            zIndex: 2147483647, // max z-index
+            pointerEvents: 'auto',
+            position: 'fixed',
+            top: 0,
+            right: 0,
+            background: 'none',
+          }}
+        >
           <MailCta />
         </div>
       )}
@@ -234,16 +264,7 @@ const App: React.FC = () => {
                 padding: '0 24px',
               }}
             >
-              <p className="font-sans text-white font-light" style={{
-                color: '#ffffff',
-                maxWidth: '620px',
-                lineHeight: 1.8,
-                fontSize: 'clamp(0.9rem, 1.9vw, 1.1rem)',
-                margin: '0 auto',
-                textShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
-              }}>
-                Thank you for flying with Mai today
-              </p>
+              {/* Removed 'Thank you for flying with Mai today' message */}
             </div>
           )}
 
@@ -256,6 +277,36 @@ const App: React.FC = () => {
               onSelectProject={setOpenCaseStudy}
             />
           )}
+
+          {/* Copyright footer - only show at the very end of the page (when scrolled to bottom) */}
+          {(() => {
+            if (typeof window === 'undefined') return null;
+            const atBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 2;
+            return atBottom ? (
+              <div
+                className="w-full text-center"
+                style={{
+                  position: 'fixed',
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: 'transparent',
+                  color: '#cccccc',
+                  fontFamily: 'Inter, sans-serif',
+                  fontSize: 'clamp(0.7rem, 1.5vw, 0.9rem)',
+                  fontWeight: 400,
+                  letterSpacing: '0.02em',
+                  zIndex: 1001,
+                  padding: '10px 0',
+                  pointerEvents: 'none',
+                  transition: 'opacity 0.5s',
+                  opacity: 1,
+                }}
+              >
+                © 2026 Mai Elamin. All rights reserved.
+              </div>
+            ) : null;
+          })()}
         </>,
         portalRef.current
       )}

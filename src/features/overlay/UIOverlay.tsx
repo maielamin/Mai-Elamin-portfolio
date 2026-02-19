@@ -126,12 +126,12 @@ const UIOverlay: React.FC<{ scrollProgress?: number; showHeader?: boolean; viewp
         const minWidth = 480;
         const easeT = Math.max(0, Math.min(1, (maxWidth - viewportSize.width) / (maxWidth - minWidth)));
         // Ease from desktop clamp to mobile clamp
-        // Desktop: clamp(2.8rem, 7vw, 6.5rem)
-        // Mobile: clamp(1.6rem, 6.2vw, 2.3rem)
-        const desktopMin = 2.8;
-        const desktopMax = 6.5;
-        const mobileMin = 1.6;
-        const mobileMax = 2.3;
+        // Desktop: clamp(2.95rem, 7vw, 6.65rem)
+        // Mobile: clamp(1.75rem, 6.2vw, 2.45rem)
+        const desktopMin = 2.95;
+        const desktopMax = 6.65;
+        const mobileMin = 1.75;
+        const mobileMax = 2.45;
         const easeInQuad = easeT * easeT;
         const minVal = desktopMin - (desktopMin - mobileMin) * easeInQuad;
         const maxVal = desktopMax - (desktopMax - mobileMax) * easeInQuad;
